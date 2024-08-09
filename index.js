@@ -1,9 +1,9 @@
-// Include TensorFlow.js library
-<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
+// Global model variable
+let model;
 
 async function loadModel() {
-    // Load the pre-trained model
-    model = await tf.loadLayersModel('path/to/model.json'); // Path to your TensorFlow.js model
+    // Load the pre-trained model from a URL
+    model = await tf.loadLayersModel('model/model.json'); // Path to your TensorFlow.js model
 }
 
 async function preprocessImage(file) {
@@ -21,10 +21,10 @@ async function generateImage(inputTensor) {
     const denormalized = generatedTensor.squeeze().mul(127.5).add(127.5).clipByValue(0, 255);
     const generatedImage = await tf.browser.toPixels(denormalized);
 
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
+    const canvas = document.getElementById('outputCanvas');
     const ctx = canvas.getContext('2d');
+    canvas.width = 256; // Set canvas width
+    canvas.height = 256; // Set canvas height
     const imageData = ctx.createImageData(256, 256);
     imageData.data.set(generatedImage);
     ctx.putImageData(imageData, 0, 0);
@@ -32,16 +32,17 @@ async function generateImage(inputTensor) {
     return canvas.toDataURL('image/png');
 }
 
-document.getElementById('image-selector').addEventListener('change', async (event) => {
-    const file = event.target.files[0];
+async function handleUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const file = fileInput.files[0];
     if (file) {
         const inputTensor = await preprocessImage(file);
         const generatedImageURL = await generateImage(inputTensor);
 
-        document.getElementById('selected-image').src = URL.createObjectURL(file);
-        document.getElementById('prediction-result').innerHTML = `<img src="${generatedImageURL}" width="224" height="224">`;
+        document.getElementById('uploadedImageContainer').innerHTML = `<img src="${URL.createObjectURL(file)}" width="256" height="256">`;
+        document.getElementById('generatedImageContainer').innerHTML = `<img src="${generatedImageURL}" width="256" height="256">`;
     }
-});
+}
 
 // Load the model when the page loads
 window.onload = loadModel;
