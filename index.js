@@ -1,7 +1,9 @@
-// index.js
+// Log to confirm script is loaded
+console.log('index.js is loaded');
 
 // Function to load the model
 async function loadModel() {
+    console.log('Loading model...');
     const model = await tf.loadLayersModel('model/model.json');
     return model;
 }
@@ -34,6 +36,7 @@ async function predict(imageElement) {
 
 // Function to handle file upload
 function handleUpload() {
+    console.log('Handle upload called');
     const fileInput = document.getElementById('fileInput');
     const uploadedImageContainer = document.getElementById('uploadedImageContainer');
     
