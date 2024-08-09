@@ -1,5 +1,4 @@
-// Import TensorFlow.js
-import * as tf from '@tensorflow/tfjs';
+// index.js
 
 // Function to load the model
 async function loadModel() {
@@ -33,6 +32,23 @@ async function predict(imageElement) {
     context.putImageData(new ImageData(outputImage, canvas.width, canvas.height), 0, 0);
 }
 
-// Example usage
-const imageElement = document.getElementById('inputImage');
-predict(imageElement);
+// Function to handle file upload
+function handleUpload() {
+    const fileInput = document.getElementById('fileInput');
+    const uploadedImageContainer = document.getElementById('uploadedImageContainer');
+    
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+    
+    reader.onload = function(e) {
+        const imageElement = document.createElement('img');
+        imageElement.src = e.target.result;
+        uploadedImageContainer.innerHTML = ''; // Clear previous uploaded image
+        uploadedImageContainer.appendChild(imageElement);
+        
+        // Call predict function with the uploaded image
+        predict(imageElement);
+    }
+    
+    reader.readAsDataURL(file);
+}
