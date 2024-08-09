@@ -3,7 +3,7 @@ import * as tf from '@tensorflow/tfjs';
 
 // Function to load the model
 async function loadModel() {
-    const model = await tf.loadLayersModel('path/to/model.json');
+    const model = await tf.loadLayersModel('model/model.json');
     return model;
 }
 
