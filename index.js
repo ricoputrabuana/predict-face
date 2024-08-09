@@ -3,6 +3,7 @@
 // Function to load the model
 async function loadModel() {
     const model = await tf.loadLayersModel('model/model.json');
+    console.log(model.summary()); // Print the model summary
     return model;
 }
 
