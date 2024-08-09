@@ -1,57 +1,38 @@
+// Import TensorFlow.js
+import * as tf from '@tensorflow/tfjs';
+
+// Function to load the model
 async function loadModel() {
-    // Load the TensorFlow.js model
-    const model = await tf.loadLayersModel('model/model.json');
+    const model = await tf.loadLayersModel('path/to/model.json');
     return model;
 }
 
-function preprocessImage(image) {
-    return new Promise((resolve) => {
-        const canvas = document.createElement('canvas');
-        const ctx = canvas.getContext('2d');
-        canvas.width = 256;
-        canvas.height = 256;
-        const img = new Image();
-        img.onload = () => {
-            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-            const imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-            const tensor = tf.browser.fromPixels(imgData).toFloat();
-            const normalized = tensor.sub(tf.scalar(127.5)).div(tf.scalar(127.5));
-            resolve(normalized.expandDims(0));
-        };
-        img.src = URL.createObjectURL(image);
-    });
-}
-
-async function generateImage() {
-    const fileInput = document.getElementById('fileInput');
-    const file = fileInput.files[0];
-    if (!file) {
-        alert('Please upload an image file.');
-        return;
-    }
-
+// Function to process and predict using the model
+async function predict(imageElement) {
     const model = await loadModel();
-    const inputImage = await preprocessImage(file);
-    const generatedImageTensor = model.predict(inputImage);
-    const generatedImage = generatedImageTensor.squeeze().mul(tf.scalar(127.5)).add(tf.scalar(127.5));
-    const generatedImageData = await tf.browser.toPixels(generatedImage);
     
-    // Display uploaded image
-    const uploadedImageContainer = document.getElementById('uploadedImageContainer');
-    uploadedImageContainer.innerHTML = `<h2>Uploaded Image:</h2><img src="${URL.createObjectURL(file)}" alt="Uploaded Image" />`;
+    // Preprocess the image to fit the model input shape
+    const image = tf.browser.fromPixels(imageElement).toFloat();
+    const resizedImage = tf.image.resizeBilinear(image, [256, 256]); // Assuming the model expects 256x256 input
+    const normalizedImage = resizedImage.div(tf.scalar(127.5)).sub(tf.scalar(1.0)); // Normalize
     
-    // Display generated image
-    const generatedImageContainer = document.getElementById('generatedImageContainer');
-    const canvas = document.createElement('canvas');
-    canvas.width = 256;
-    canvas.height = 256;
-    const ctx = canvas.getContext('2d');
-    const imgData = new ImageData(new Uint8ClampedArray(generatedImageData), 256, 256);
-    ctx.putImageData(imgData, 0, 0);
-    generatedImageContainer.innerHTML = `<h2>Generated Image:</h2>`;
-    generatedImageContainer.appendChild(canvas);
+    // Add batch dimension
+    const batchedImage = normalizedImage.expandDims(0);
+    
+    // Predict
+    const prediction = model.predict(batchedImage);
+    
+    // Post-process and use the prediction
+    const output = prediction.squeeze().add(tf.scalar(1.0)).mul(tf.scalar(127.5)); // Denormalize
+    const outputImage = await tf.browser.toPixels(output);
+    
+    // Display or use the output image
+    const canvas = document.getElementById('outputCanvas');
+    const context = canvas.getContext('2d');
+    context.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
+    context.putImageData(new ImageData(outputImage, canvas.width, canvas.height), 0, 0);
 }
 
-function handleUpload() {
-    generateImage();
-}
+// Example usage
+const imageElement = document.getElementById('inputImage');
+predict(imageElement);
