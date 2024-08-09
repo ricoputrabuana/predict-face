@@ -10,22 +10,9 @@
     <h1>Upload an Image</h1>
     <input type="file" id="fileInput" />
     <button onclick="handleUpload()">Upload</button>
-    <div id="modelStatus"></div> <!-- Tambahkan elemen untuk status model -->
     <div id="uploadedImageContainer"></div>
     <div id="generatedImageContainer"></div>
     <canvas id="outputCanvas"></canvas> <!-- tambahkan canvas untuk menampilkan gambar hasil -->
-    <script>
-        // Global model variable
-        let model;
-        
-        async function loadModel() {
-            try {
-                model = await tf.loadLayersModel('model/model.json'); // Path to your TensorFlow.js model
-                document.getElementById('modelStatus').textContent = 'Model loaded successfully!';
-            } catch (error) {
-                document.getElementById('modelStatus').textContent = 'Error loading model: ' + error.message;
-            }
-        }
-    </script>
+    <script src="index.js"></script>
 </body>
 </html>
