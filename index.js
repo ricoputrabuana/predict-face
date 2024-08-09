@@ -1,57 +1,47 @@
-// Log to confirm script is loaded
-console.log('index.js is loaded');
+// Include TensorFlow.js library
+<script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs"></script>
 
-// Function to load the model
 async function loadModel() {
-    console.log('Loading model...');
-    const model = await tf.loadLayersModel('model/model.json');
-    return model;
+    // Load the pre-trained model
+    model = await tf.loadLayersModel('path/to/model.json'); // Path to your TensorFlow.js model
 }
 
-// Function to process and predict using the model
-async function predict(imageElement) {
-    const model = await loadModel();
-    
-    // Preprocess the image to fit the model input shape
-    const image = tf.browser.fromPixels(imageElement).toFloat();
-    const resizedImage = tf.image.resizeBilinear(image, [256, 256]); // Assuming the model expects 256x256 input
-    const normalizedImage = resizedImage.div(tf.scalar(127.5)).sub(tf.scalar(1.0)); // Normalize
-    
-    // Add batch dimension
-    const batchedImage = normalizedImage.expandDims(0);
-    
-    // Predict
-    const prediction = model.predict(batchedImage);
-    
-    // Post-process and use the prediction
-    const output = prediction.squeeze().add(tf.scalar(1.0)).mul(tf.scalar(127.5)); // Denormalize
-    const outputImage = await tf.browser.toPixels(output);
-    
-    // Display or use the output image
-    const canvas = document.getElementById('outputCanvas');
-    const context = canvas.getContext('2d');
-    context.drawImage(imageElement, 0, 0, canvas.width, canvas.height);
-    context.putImageData(new ImageData(outputImage, canvas.width, canvas.height), 0, 0);
+async function preprocessImage(file) {
+    const img = document.createElement('img');
+    img.src = URL.createObjectURL(file);
+    await new Promise(resolve => img.onload = resolve);
+
+    const tensor = tf.browser.fromPixels(img).resizeNearestNeighbor([256, 256]).toFloat();
+    const normalized = tensor.sub(127.5).div(127.5);
+    return normalized.expandDims(0);
 }
 
-// Function to handle file upload
-function handleUpload() {
-    console.log('Handle upload called');
-    const fileInput = document.getElementById('fileInput');
-    const uploadedImageContainer = document.getElementById('uploadedImageContainer');
-    
-    const file = fileInput.files[0];
-    const reader = new FileReader();
-    
-    reader.onload = function(e) {
-        const imageElement = document.createElement('img');
-        imageElement.src = e.target.result;
-        uploadedImageContainer.innerHTML = ''; // Clear previous uploaded image
-        uploadedImageContainer.appendChild(imageElement);
-        
-        // Call predict function with the uploaded image
-        predict(imageElement);
+async function generateImage(inputTensor) {
+    const generatedTensor = model.predict(inputTensor);
+    const denormalized = generatedTensor.squeeze().mul(127.5).add(127.5).clipByValue(0, 255);
+    const generatedImage = await tf.browser.toPixels(denormalized);
+
+    const canvas = document.createElement('canvas');
+    canvas.width = 256;
+    canvas.height = 256;
+    const ctx = canvas.getContext('2d');
+    const imageData = ctx.createImageData(256, 256);
+    imageData.data.set(generatedImage);
+    ctx.putImageData(imageData, 0, 0);
+
+    return canvas.toDataURL('image/png');
+}
+
+document.getElementById('image-selector').addEventListener('change', async (event) => {
+    const file = event.target.files[0];
+    if (file) {
+        const inputTensor = await preprocessImage(file);
+        const generatedImageURL = await generateImage(inputTensor);
+
+        document.getElementById('selected-image').src = URL.createObjectURL(file);
+        document.getElementById('prediction-result').innerHTML = `<img src="${generatedImageURL}" width="224" height="224">`;
     }
-    
-    reader.readAsDataURL(file);
-}
+});
+
+// Load the model when the page loads
+window.onload = loadModel;
